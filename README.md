@@ -27,7 +27,7 @@ Designed for institutions to conduct exams over a local network (LAN) without re
 
 *Teachers upload questions one at a time or in bulk via Excel. Live question bank shown on the right.*
 ### Blueprints & exam setup
-![Blueprint creation](./screenshots/admin_blueprint.png) | ![Blueprint creation](./screenshots/admin_exam.png)
+![Blueprint creation](./screenshots/admin_blueprint.png) | ![Exam creation](./screenshots/admin_exam.png)
 *Create blueprints with per-subject question counts, marks, and optional section labels. Exams are built from blueprints.*
 
 ### Live exam interface
