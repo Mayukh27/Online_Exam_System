@@ -19,24 +19,25 @@ Designed for institutions to conduct exams over a local network (LAN) without re
 ## Screenshots
 
 ### Admin dashboard
-![Admin dashboard](screenshots/admin_dash.png)
+![Admin dashboard](./screenshots/admin_dash.png)
 *Platform overview showing total students, teachers, and subjects at a glance.*
 
+### Teacher — question bank
+![Question upload](./screenshots/question_upload.png)
+
+*Teachers upload questions one at a time or in bulk via Excel. Live question bank shown on the right.*
 ### Blueprints & exam setup
-![Blueprint creation](screenshots/admin_blueprint.png)
+![Blueprint creation](./screenshots/admin_blueprint.png) | ![Blueprint creation](./screenshots/admin_exam.png)
 *Create blueprints with per-subject question counts, marks, and optional section labels. Exams are built from blueprints.*
 
 ### Live exam interface
-![Exam in progress](screenshots/exam.png)
+![Exam in progress](./screenshots/exam.png)
 *GATE/JEE-style exam UI: countdown timer, question navigator with colour-coded status, mark-for-review, and submit.*
 
 ### Exam result
-![Result page](screenshots/result.png)
+![Result page](./screenshots/result.png)
 *Score card with correct/wrong/unattempted breakdown, subject-wise analysis table, and one-click PDF download.*
 
-### Teacher — question bank
-![Question upload](screenshots/question_upload.png)
-*Teachers upload questions one at a time or in bulk via Excel. Live question bank shown on the right.*
 
 ---
 
