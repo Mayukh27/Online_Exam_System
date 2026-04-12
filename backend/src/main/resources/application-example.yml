@@ -1,0 +1,74 @@
+server:
+  address: 0.0.0.0
+  port: 8080
+
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password:  ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username:  ${MAIL_USERNAME}
+    password:  ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000
+  refresh-expiration: 604800000
+web:
+  resources:
+    static-locations: classpath:/static/
+mvc:
+  static-path-pattern: /**
+
+features:
+  admin: true
+  teacher: true
+  analytics: true
+  blueprint: true
+  proctor: true
+  ai: false
+  pdf: true
+  email: false
+
+exam:
+  proctor:
+    max-violations: 1
+    # FEATURE: Fullscreen Exam Fix
+    # How many fullscreen exits are allowed before auto-submit.
+    # Each exit shows a warning modal with a grace countdown.
+    # Default 3 gives student two warnings before the third triggers submit.
+    max-fullscreen-exits: 1
+    # Grace period in seconds shown in the "Return to fullscreen" modal countdown.
+    # During this window the student can re-enter fullscreen without penalty.
+    fullscreen-grace-seconds: 10
+  timer:
+    grace-period-seconds: 30
+
+logging:
+  level:
+    com.examportal: INFO
+    org.springframework.security: WARN
