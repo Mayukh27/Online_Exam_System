@@ -19,8 +19,8 @@ public enum ViolationType {
     TAB_SWITCH,
     WINDOW_BLUR,
     FULLSCREEN_EXIT,
-    COPY_PASTE,
-    CONTEXT_MENU,
+    //COPY_PASTE,
+    //CONTEXT_MENU,
     KEYBOARD_SHORTCUT,
     /** CHANGE: Mouse left the document area — user moved to another window */
     MOUSE_LEAVE,

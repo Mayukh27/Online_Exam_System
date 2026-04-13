@@ -10,3 +10,33 @@
 body { font-family: "IBM Plex Sans", -apple-system, sans-serif; background: var(--bg); color: var(--text-primary); font-size: 14px; line-height: 1.5; }
 input, textarea, select, button { font-family: inherit; }
 a { color: var(--primary); text-decoration: none; }
+/* ===== Snackbar (Bottom Center) ===== */
+.snackbar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  
+  background: #e01111; /* your exam header */
+  color: #ffffff;
+
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+
+  z-index: 9999;
+
+  opacity: 0;
+  pointer-events: none;
+
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+
+  transition: all 0.3s ease;
+}
+
+/* Visible state */
+.snackbar.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

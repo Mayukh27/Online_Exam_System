@@ -59,8 +59,8 @@ public class ProctorService {
     private static final Set<ViolationType> HARD_VIOLATIONS = Set.of(
         ViolationType.TAB_SWITCH,
         ViolationType.WINDOW_BLUR,
-        ViolationType.COPY_PASTE,
-        ViolationType.CONTEXT_MENU,
+        //ViolationType.COPY_PASTE,
+        //ViolationType.CONTEXT_MENU,
         ViolationType.KEYBOARD_SHORTCUT,
         ViolationType.MOUSE_LEAVE,
         ViolationType.DEVTOOLS_OPEN

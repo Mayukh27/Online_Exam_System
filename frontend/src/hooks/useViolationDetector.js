@@ -30,7 +30,8 @@ export default function useViolationDetector(
   attemptId,
   enabled,
   onAutoSubmit,
-  onFullscreenExit
+  onFullscreenExit,
+showSnackbar
 ) {
   const reportingRef = useRef(false);
   const devtoolsCheckRef = useRef(null);
@@ -57,7 +58,7 @@ export default function useViolationDetector(
     } finally {
       setTimeout(() => { reportingRef.current = false; }, 1500);
     }
-  }, [attemptId, enabled, onAutoSubmit, onFullscreenExit]);
+  }, [attemptId, enabled, onAutoSubmit, onFullscreenExit, showSnackbar]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -83,30 +84,67 @@ export default function useViolationDetector(
     };
 
     // ── COPY / CUT / PASTE ─────────────────────────────────────
-    const onCopy = (e) => { e.preventDefault(); report('COPY_PASTE', 'Copy attempted'); };
-    const onCut  = (e) => { e.preventDefault(); report('COPY_PASTE', 'Cut attempted'); };
-    const onPaste = (e) => { e.preventDefault(); report('COPY_PASTE', 'Paste attempted'); };
+    const onCopy = (e) => { 
+      e.preventDefault(); 
+      showSnackbar("Cut/Copy/Paste is not allowed during the exam");
+      //report('COPY_PASTE', 'Copy attempted'); 
+    };
+    const onCut  = (e) => { 
+      e.preventDefault(); 
+      showSnackbar("Cut/Copy/Paste is not allowed during the exam");
+      //report('COPY_PASTE', 'Cut attempted');
+     };
+    const onPaste = (e) => { 
+      e.preventDefault(); 
+      showSnackbar("Cut/Copy/Paste is not allowed during the exam");
+      //report('COPY_PASTE', 'Paste attempted'); 
+    };
 
     // ── CONTEXT MENU (right-click) ─────────────────────────────
-    const onCtx = (e) => { e.preventDefault(); report('CONTEXT_MENU', 'Right-click blocked'); };
+    let  lastAlertTime = 0;
+    const onCtx = (e) => { 
+      e.preventDefault(); 
+    const now = Date.now();
+    if (now - lastAlertTime > 2000) { // 2 sec cooldown
+        showSnackbar("Right-click is not allowed during the exam");
+        lastAlertTime = now;
+    //report('CONTEXT_MENU', 'Right-click blocked'); 
+    }
+  };
 
     // ── KEYBOARD SHORTCUTS ─────────────────────────────────────
     const onKey = (e) => {
       const k = e.key.toLowerCase();
 
       // DevTools shortcuts
-      if (e.key === 'F12') { e.preventDefault(); report('KEYBOARD_SHORTCUT', 'F12 blocked'); return; }
+      if (e.key === 'F12') { 
+        e.preventDefault(); 
+        report('KEYBOARD_SHORTCUT', 'F12 blocked'); 
+        return; }
       if (e.ctrlKey && e.shiftKey && ['i','j','c'].includes(k)) {
-        e.preventDefault(); report('KEYBOARD_SHORTCUT', `Ctrl+Shift+${e.key} blocked`); return;
+        e.preventDefault(); 
+        report('KEYBOARD_SHORTCUT', `Ctrl+Shift+${e.key} blocked`); 
+        return;
       }
       // Copy/paste/view-source
       if (e.ctrlKey && ['c','v','x','u','a','s'].includes(k)) {
-        e.preventDefault(); report('KEYBOARD_SHORTCUT', `Ctrl+${e.key} blocked`); return;
+        e.preventDefault(); 
+        showSnackbar("Keyboard shortcuts are not allowed during the exam");
+        //report('KEYBOARD_SHORTCUT', `Ctrl+${e.key} blocked`); 
+        return;
       }
       // ESC: prevent default to suppress fullscreen exit key in some browsers
-      if (e.key === 'Escape') { e.preventDefault(); }
+      if (e.key === 'Escape') 
+        {
+           e.preventDefault();
+           showSnackbar("Exiting fullscreen mode is not allowed during the exam");
+          //report('KEYBOARD_SHORTCUT', 'Escape key blocked');
+        }
       // Alt+Tab (only detectable if window is still focused)
-      if (e.altKey && e.key === 'Tab') { e.preventDefault(); report('KEYBOARD_SHORTCUT', 'Alt+Tab blocked'); }
+      if (e.altKey && e.key === 'Tab') 
+        { 
+          e.preventDefault(); report('KEYBOARD_SHORTCUT', 'Alt+Tab blocked'); 
+        }
     };
 
     // ── MOUSE LEAVE ─────────────────────────────────────────────
@@ -133,7 +171,7 @@ export default function useViolationDetector(
       }
     };
     devtoolsCheckRef.current = setInterval(checkDevtools, 3000);
-
+  
     // ── REGISTER ALL LISTENERS ─────────────────────────────────
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('blur', onBlur);
