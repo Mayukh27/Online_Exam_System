@@ -222,7 +222,7 @@ Teachers can upload questions in bulk using an `.xlsx` file.
 
 | Column | Field | Required |
 |---|---|---|
-| A | `subject_id` | ✅ Numeric DB id |
+| A | `subject_code` | ✅ Subject Code (String)(Unique for each subject) |
 | B | `question_text` | ✅ |
 | C | `option_a` | ✅ |
 | D | `option_b` | ✅ |
