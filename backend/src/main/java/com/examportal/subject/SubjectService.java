@@ -40,11 +40,9 @@ public class SubjectService {
         return subjectRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Subject not found: " + id));
     }
-
-    /** Subject Code = Subject ID — find by code */
     public Subject getEntityByCode(String code) {
         return subjectRepository.findByCode(code)
-            .orElseThrow(() -> new IllegalArgumentException("Subject not found for code: " + code));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid subject code: " + code));
     }
 
     public SubjectDTO update(Long id, SubjectDTO dto) {

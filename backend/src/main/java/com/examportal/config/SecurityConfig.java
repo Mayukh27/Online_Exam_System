@@ -52,8 +52,7 @@ public class SecurityConfig {
                                 "/auth/**",
                                 "/student/**",
                                 "/teacher/**",
-                                "/admin/**",
-                                "/**").permitAll()
+                                "/admin/**").permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

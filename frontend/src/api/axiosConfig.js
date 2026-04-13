@@ -17,7 +17,7 @@ api.interceptors.request.use((config) => {
     }
   } catch (e) {
     console.error("Storage parse error:", e);
-    localStorage.removeItem('examportal_user'); // 🔥 reset bad data
+    localStorage.removeItem('examportal_user');
   }
 
   return config;

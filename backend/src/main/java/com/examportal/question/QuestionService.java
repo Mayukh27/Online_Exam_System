@@ -60,7 +60,7 @@ public class QuestionService {
      * Upload questions from an Excel file (.xlsx).
      *
      * Expected column order (row 1 = header, skipped):
-     *   A (0) subject_id       - numeric DB id of the subject
+     *   A (0) subject_code     - code of the subject
      *   B (1) question_text    - full question text
      *   C (2) option_a         - option A
      *   D (3) option_b         - option B
@@ -101,8 +101,13 @@ public class QuestionService {
                 if (subjectCell == null || subjectCell.toString().isBlank()) continue;
 
                 try {
-                    Long subjectId = (long) subjectCell.getNumericCellValue();
-                    Subject subject = subjectService.getEntityById(subjectId);
+                    String subjectCode = subjectCell.toString().trim();
+
+                    if (subjectCode.isBlank()) {
+                        throw new IllegalArgumentException(
+                                "Row " + (row.getRowNum()+1) + ": Subject code is empty");
+                    }
+                    Subject subject = subjectService.getEntityByCode(subjectCode);
 
                     Cell qTextCell = row.getCell(1);
                     if (qTextCell == null || qTextCell.toString().isBlank()) continue;
@@ -166,7 +171,7 @@ public class QuestionService {
 
             if (questions.isEmpty()) {
                 throw new IllegalArgumentException(
-                        "No valid questions found in the file. Check that column A contains a valid subject ID.");
+                        "No valid questions found in the file. Check that column A contains a valid subject code.");
             }
 
             questionRepository.saveAll(questions);
