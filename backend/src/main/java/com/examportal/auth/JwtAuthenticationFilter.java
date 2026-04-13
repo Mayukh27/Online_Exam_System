@@ -29,7 +29,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        // 🔥 Skip JWT for frontend + auth routes
         String path = request.getServletPath();
 
         if (path.equals("/") ||
@@ -37,7 +36,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.startsWith("/static") ||
                 path.endsWith(".js") ||
                 path.endsWith(".css") ||
-                path.startsWith("/api/auth")) {
+                path.equals("/favicon.ico") ||
+                path.startsWith("/auth")) {
 
             filterChain.doFilter(request, response);
             return;
@@ -54,9 +54,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String userEmail = jwtService.extractUsername(jwt);
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
             UserDetails userDetails = userService.loadUserByUsername(userEmail);
 
             if (jwtService.isTokenValid(jwt, userDetails)) {
+
+                String sessionToken = request.getHeader("X-Session-Token");
+                com.examportal.user.User user = (com.examportal.user.User) userDetails;
+
+                if (sessionToken == null || user.getSessionToken() == null ||
+                        !sessionToken.equals(user.getSessionToken())) {
+
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,

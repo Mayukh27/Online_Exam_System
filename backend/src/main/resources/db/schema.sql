@@ -171,6 +171,10 @@ ALTER TABLE blueprint_entries ADD COLUMN IF NOT EXISTS section_name VARCHAR(255)
 ALTER TABLE blueprint_entries ADD COLUMN IF NOT EXISTS subject_ids  VARCHAR(500);
 ALTER TABLE blueprint_entries ADD COLUMN IF NOT EXISTS negative_marks DOUBLE PRECISION DEFAULT 0.25;
 
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS is_logged_in BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS session_token VARCHAR(255);
+
 -- Backfill subject_ids from subject_id for any existing rows
 UPDATE blueprint_entries
 SET subject_ids = CAST(subject_id AS VARCHAR)

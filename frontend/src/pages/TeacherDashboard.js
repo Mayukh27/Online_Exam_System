@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { getSubjects, getQuestions, uploadQuestion } from '../api/adminApi';
 import ExamResultsViewer from '../components/ExamResultsViewer';
 import Spinner from '../components/Spinner';
+import api from '../api/axiosConfig';
 
 const EMPTY_FORM = {
   questionText: '',
@@ -33,6 +34,27 @@ export default function TeacherDashboard() {
   const [teacherTab, setTeacherTab] = useState('Questions'); // 'Questions' | 'Results'
   const [questionFile, setQuestionFile] = useState(null);
 
+  useEffect(() => {
+  const handleBack = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (e) {
+      console.warn("Logout failed");
+    }
+
+    localStorage.removeItem("examportal_user");
+    localStorage.removeItem("exam_active");
+
+    window.location.href = "/login";
+  };
+
+  window.history.pushState(null, "", window.location.href);
+  window.addEventListener("popstate", handleBack);
+
+  return () => {
+    window.removeEventListener("popstate", handleBack);
+  };
+}, []);
   useEffect(() => {
     getSubjects().then(r => setSubjects(r.data.data || [])).catch(() => { });
   }, []);
@@ -141,6 +163,18 @@ export default function TeacherDashboard() {
 
   const inp = { width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 5, fontSize: 13 };
   const lbl = { fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 };
+  
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (e) {
+        console.warn("Logout API failed");
+      }
+
+   localStorage.removeItem("exam_active");
+   logout();
+   navigate('/login');
+ };
 
   return (
 
@@ -164,7 +198,7 @@ export default function TeacherDashboard() {
           </span>
 
           <button
-            onClick={() => { logout(); navigate('/login'); }}
+            onClick={() => { handleLogout(); }}
             style={{ padding: '6px 14px', border: '1px solid var(--border)', borderRadius: 6, background: '#fff', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13 }}
           >
             Sign out

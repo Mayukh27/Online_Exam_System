@@ -220,7 +220,21 @@ export default function ExamPage() {
     session ? session.timeRemainingSeconds : null,
     doSubmit
   );
-
+  useEffect(() => {
+  const handleUnload = () => {
+    localStorage.removeItem("exam_active");
+  };
+  window.addEventListener("beforeunload", handleUnload);
+  return () => {
+    window.removeEventListener("beforeunload", handleUnload);
+    localStorage.removeItem("exam_active");
+  };
+}, []);
+  useEffect(() => {
+  return () => {
+    localStorage.removeItem("exam_active");
+  };
+}, []);
   /* ── VIOLATION DETECTOR ─────────────────────────────────────── */
   useViolationDetector(
     session?.attemptId,

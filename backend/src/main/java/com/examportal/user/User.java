@@ -58,6 +58,13 @@ public class User implements UserDetails {
         updatedAt = LocalDateTime.now();
     }
 
+    @Builder.Default
+    @Column(name = "is_logged_in")
+    private Boolean LoggedIn = false;
+
+    @Column(name = "session_token", length = 255)
+    private String sessionToken;
+
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();

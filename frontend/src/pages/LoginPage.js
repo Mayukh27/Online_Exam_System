@@ -13,17 +13,34 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); setLoading(true);
+    console.log("Login clicked");  // 🔥
+    setError('');setLoading(true);
     try {
+      console.log("Calling API...");  // 🔥
       const res = await login(form);
+      console.log("Response:", res);  // 🔥
       const user = res.data.data;
+      localStorage.setItem('examportal_user', JSON.stringify({
+      token: user.token,
+      sessionToken: user.sessionToken,
+      role: user.role,
+      userId: user.userId,
+      email: user.email
+    }));
       authLogin(user);
       if (user.role === 'ADMIN') navigate('/admin');
       else if (user.role === 'TEACHER') navigate('/teacher');
       else navigate('/student');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
-    } finally { setLoading(false); }
+         const msg = err.response?.data?.message || "";
+         if (msg.toLowerCase().includes("already logged in")) {
+             setError("You are already logged in on another device.");
+            }
+          else {
+             setError("Login failed. Please check your credentials.");
+            }
+        }
+      finally { setLoading(false); }
   };
 
   return (

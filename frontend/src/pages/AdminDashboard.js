@@ -5,6 +5,7 @@ import { getPendingTeachers, approveTeacher, getStats, getSubjects, createSubjec
 import { createBlueprint, createExam, publishExam, getAllExams, getBlueprints, deleteBlueprint } from '../api/examApi';
 import ExamResultsViewer from '../components/ExamResultsViewer';
 import Spinner from '../components/Spinner';
+import api from '../api/axiosConfig';
 
 const TABS = ['Overview','Teachers','Subjects','Blueprints','Exams','Results'];
 
@@ -26,7 +27,27 @@ export default function AdminDashboard() {
   const showSectionName = blueprintForm.entries.length > 1;
   
   const flash = (text, ok=true) => { setMsg({text,ok}); setTimeout(()=>setMsg({text:'',ok:true}),4000); };
+  useEffect(() => {
+  const handleBack = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (e) {
+      console.warn("Logout failed");
+    }
 
+    localStorage.removeItem("examportal_user");
+    localStorage.removeItem("exam_active");
+
+    window.location.href = "/login";
+  };
+
+  window.history.pushState(null, "", window.location.href);
+  window.addEventListener("popstate", handleBack);
+
+  return () => {
+    window.removeEventListener("popstate", handleBack);
+  };
+}, []);
   useEffect(() => {
     getStats().then(r=>setStats(r.data.data||{})).catch(()=>{});
     getSubjects().then(r=>setSubjects(r.data.data||[])).catch(()=>{});
@@ -90,6 +111,18 @@ export default function AdminDashboard() {
   };
 
   const tabIcon = { Overview:'📊', Teachers:'👨‍🏫', Subjects:'📚', Blueprints:'🗺', Exams:'📋', Results:'🏆' };
+  
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (e) {
+        console.warn("Logout API failed");
+      }
+
+   localStorage.removeItem("exam_active");
+   logout();
+   navigate('/login');
+ };
 
   return (
     <div style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column'}}>
@@ -102,7 +135,7 @@ export default function AdminDashboard() {
         </div>
         <div style={{display:'flex',alignItems:'center',gap:16}}>
           <span style={{fontSize:13,color:'var(--text-secondary)'}}>Welcome, <strong>{user?.fullName}</strong></span>
-          <button onClick={()=>{logout();navigate('/login');}} style={{padding:'6px 14px',border:'1px solid var(--border)',borderRadius:6,background:'#fff',color:'var(--text-secondary)',cursor:'pointer',fontSize:13}}>Sign out</button>
+          <button onClick={()=>{handleLogout();}} style={{padding:'6px 14px',border:'1px solid var(--border)',borderRadius:6,background:'#fff',color:'var(--text-secondary)',cursor:'pointer',fontSize:13}}>Sign out</button>
         </div>
       </div>
 

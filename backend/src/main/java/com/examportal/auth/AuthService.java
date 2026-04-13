@@ -31,42 +31,57 @@ public class AuthService {
         boolean autoApproved = request.getRole() != Role.TEACHER;
 
         User user = User.builder()
-            .email(request.getEmail())
-            .password(passwordEncoder.encode(request.getPassword()))
-            .fullName(request.getFullName())
-            .role(request.getRole())
-            .approved(autoApproved)
-            .build();
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .fullName(request.getFullName())
+                .role(request.getRole())
+                .approved(autoApproved)
+                .build();
         userRepository.save(user);
 
         return AuthResponse.builder()
-            .token(jwtService.generateToken(user))
-            .userId(user.getId())
-            .email(user.getEmail())
-            .fullName(user.getFullName())
-            .role(user.getRole())
-            .approved(user.isApproved())
-            .build();
+                .token(jwtService.generateToken(user))
+                .userId(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .approved(user.isApproved())
+                .build();
     }
 
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
         User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
+
+        if (Boolean.TRUE.equals(user.getLoggedIn()) && user.getSessionToken() != null) {
+            throw new RuntimeException("User already logged in from another device");
+        }
 
         if (user.getRole() == Role.TEACHER && !user.isApproved()) {
             throw new IllegalStateException("Your teacher account is pending admin approval");
         }
 
+        String sessionToken = java.util.UUID.randomUUID().toString();
+
+        user.setLoggedIn(true);
+        user.setSessionToken(sessionToken);
+        userRepository.save(user);
+
         return AuthResponse.builder()
-            .token(jwtService.generateToken(user))
-            .userId(user.getId())
-            .email(user.getEmail())
-            .fullName(user.getFullName())
-            .role(user.getRole())
-            .approved(user.isApproved())
-            .build();
+                .token(jwtService.generateToken(user))
+                .sessionToken(sessionToken)
+                .userId(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .approved(user.isApproved())
+                .build();
     }
 }
