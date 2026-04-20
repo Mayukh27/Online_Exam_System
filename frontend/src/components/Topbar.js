@@ -1,6 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import api from "../api/axiosConfig";
+import { runLogoutFlow } from "../utils/authSession";
 
 const ROLE_LABEL = { ADMIN:"Administrator", TEACHER:"Teacher", STUDENT:"Student" };
 
@@ -24,7 +26,14 @@ function Topbar({ subtitle }) {
           <div style={{ fontSize:13, fontWeight:600 }}>{user?.fullName}</div>
           <div style={{ fontSize:11, opacity:0.75 }}>{ROLE_LABEL[user?.role]}</div>
         </div>
-        <button onClick={() => { logout(); navigate("/login"); }}
+        <button onClick={async () => {
+          await runLogoutFlow({
+            apiClient: api,
+            logout,
+            onError: () => console.warn("Logout failed")
+          });
+          navigate("/login");
+        }}
           style={{ background:"rgba(255,255,255,0.12)", color:"#fff", border:"1px solid rgba(255,255,255,0.25)",
             padding:"5px 14px", borderRadius:5, fontSize:13, cursor:"pointer", fontWeight:500 }}>
           Sign Out

@@ -91,4 +91,14 @@ public class ResultController {
             .contentType(MediaType.APPLICATION_PDF)
             .body(pdfBytes);
     }
+
+    @GetMapping("/exam/{examId}/students/excel")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    public ResponseEntity<byte[]> downloadExamResultsExcel(@PathVariable Long examId) {
+        byte[] excel = evaluationService.downloadExamResultsExcel(examId);
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=exam_" + examId + "_detailed_results.xlsx")
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .body(excel);
+    }
 }

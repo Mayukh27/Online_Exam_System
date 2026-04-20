@@ -17,6 +17,17 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query(value = "SELECT * FROM questions WHERE subject_id = :subjectId AND active = true ORDER BY RANDOM()", nativeQuery = true)
     List<Question> findRandomBySubjectId(Long subjectId, Pageable pageable);
 
+        @Query(value = """
+                        SELECT *
+                        FROM questions
+                        WHERE subject_id = :subjectId
+                            AND active = true
+                            AND marks = :marks
+                            AND ABS(negative_marks - :negativeMarks) < 0.000001
+                        ORDER BY RANDOM()
+                        """, nativeQuery = true)
+        List<Question> findRandomBySubjectIdAndMarks(Long subjectId, Integer marks, Double negativeMarks, Pageable pageable);
+
     /** CHANGE: Used by SubjectService.delete() to cascade question removal */
     @Modifying
     @Query("DELETE FROM Question q WHERE q.subject.id = :subjectId")

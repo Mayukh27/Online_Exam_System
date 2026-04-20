@@ -14,10 +14,15 @@ import com.examportal.user.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -149,7 +154,7 @@ public class EvaluationService {
 
         return results.stream().map(r -> {
             User student = userRepository.findById(r.getStudentId()).orElse(null);
-            ExamAttempt attempt = attemptRepository.findByStudentIdAndExamId(r.getStudentId(), examId).orElse(null);
+            ExamAttempt attempt = attemptRepository.findById(r.getAttemptId()).orElse(null);
 
             Map<String, Object> breakdown = new LinkedHashMap<>();
             try {
@@ -189,6 +194,100 @@ public class EvaluationService {
                 .status(attempt != null ? attempt.getStatus().name() : "EVALUATED")
                 .build();
         }).collect(Collectors.toList());
+    }
+
+    public byte[] downloadExamResultsExcel(Long examId) {
+        List<ExamResultDetailDTO> rows = getExamResultsForAdmin(examId);
+
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            Sheet sheet = wb.createSheet("Detailed Results");
+
+            Row header = sheet.createRow(0);
+            String[] cols = {
+                "Rank",
+                "Student Name",
+                "Student Email",
+                "Attempt ID",
+                "Exam ID",
+                "Exam Title",
+                "Status",
+                "Total Score",
+                "Total Questions",
+                "Attempted",
+                "Correct",
+                "Wrong",
+                "Unattempted",
+                "Hard Violations",
+                "Fullscreen Exits",
+                "Submitted At",
+                "Evaluated At",
+                "Subject Breakdown",
+                "Violation Details"
+            };
+            for (int i = 0; i < cols.length; i++) {
+                header.createCell(i).setCellValue(cols[i]);
+            }
+
+            int rowIndex = 1;
+            for (int i = 0; i < rows.size(); i++) {
+                ExamResultDetailDTO r = rows.get(i);
+                Row row = sheet.createRow(rowIndex++);
+
+                row.createCell(0).setCellValue(i + 1);
+                row.createCell(1).setCellValue(nullSafe(r.getStudentName()));
+                row.createCell(2).setCellValue(nullSafe(r.getStudentEmail()));
+                row.createCell(3).setCellValue(r.getAttemptId() != null ? r.getAttemptId() : 0);
+                row.createCell(4).setCellValue(r.getExamId() != null ? r.getExamId() : 0);
+                row.createCell(5).setCellValue(nullSafe(r.getExamTitle()));
+                row.createCell(6).setCellValue(nullSafe(r.getStatus()));
+                row.createCell(7).setCellValue(r.getTotalScore() != null ? r.getTotalScore() : 0.0);
+                row.createCell(8).setCellValue(r.getTotalQuestions() != null ? r.getTotalQuestions() : 0);
+                row.createCell(9).setCellValue(r.getAttempted() != null ? r.getAttempted() : 0);
+                row.createCell(10).setCellValue(r.getCorrect() != null ? r.getCorrect() : 0);
+                row.createCell(11).setCellValue(r.getWrong() != null ? r.getWrong() : 0);
+                row.createCell(12).setCellValue(r.getUnattempted() != null ? r.getUnattempted() : 0);
+                row.createCell(13).setCellValue(r.getViolationCount() != null ? r.getViolationCount() : 0);
+                row.createCell(14).setCellValue(r.getFullscreenExitCount() != null ? r.getFullscreenExitCount() : 0);
+                row.createCell(15).setCellValue(r.getSubmittedAt() != null ? r.getSubmittedAt().toString() : "");
+                row.createCell(16).setCellValue(r.getEvaluatedAt() != null ? r.getEvaluatedAt().toString() : "");
+                row.createCell(17).setCellValue(safeJson(r.getSubjectWiseBreakdown()));
+                row.createCell(18).setCellValue(violationSummary(r.getViolations()));
+            }
+
+            for (int i = 0; i < cols.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            wb.write(bos);
+            return bos.toByteArray();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to generate detailed results Excel: " + e.getMessage());
+        }
+    }
+
+    private String safeJson(Object value) {
+        if (value == null) return "";
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (Exception e) {
+            return String.valueOf(value);
+        }
+    }
+
+    private String violationSummary(List<ExamResultDetailDTO.ViolationLogDTO> violations) {
+        if (violations == null || violations.isEmpty()) return "";
+        return violations.stream()
+                .map(v -> {
+                    String t = v.getViolationType() != null ? v.getViolationType() : "UNKNOWN";
+                    String d = v.getDetails() != null ? v.getDetails() : "";
+                    String at = v.getOccurredAt() != null ? v.getOccurredAt().toString() : "";
+                    return t + (d.isBlank() ? "" : (": " + d)) + (at.isBlank() ? "" : (" @" + at));
+                })
+                .collect(Collectors.joining(" | "));
+    }
+
+    private String nullSafe(String value) {
+        return value != null ? value : "";
     }
 
     private static class SubjectBreakdown {

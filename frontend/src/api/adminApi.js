@@ -14,3 +14,5 @@ export const getExamSummary = (examId) => api.get('/analytics/exam/'+examId+'/su
 /** CHANGE: Results viewer endpoints */
 export const getExamsWithResults = () => api.get('/results/exams');
 export const getExamStudentResults = (examId) => api.get('/results/exam/'+examId+'/students');
+export const downloadExamStudentResultsExcel = (examId) =>
+	api.get('/results/exam/' + examId + '/students/excel', { responseType: 'blob' });

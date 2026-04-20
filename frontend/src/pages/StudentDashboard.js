@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { getActiveExams, getUpcomingExams } from '../api/examApi';
 import Spinner from '../components/Spinner';
 import api from '../api/axiosConfig';
+import { runLogoutFlow } from '../utils/authSession';
 
 export default function StudentDashboard() {
   const { user, logout } = useAuth();
@@ -14,16 +15,12 @@ export default function StudentDashboard() {
   
   useEffect(() => {
   const handleBack = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch (e) {
-      console.warn("Logout failed");
-    }
-
-    localStorage.removeItem("examportal_user");
-    localStorage.removeItem("exam_active");
-
-    window.location.href = "/login";
+    await runLogoutFlow({
+      apiClient: api,
+      logout,
+      onError: () => console.warn("Logout failed")
+    });
+    navigate('/login', { replace: true });
   };
 
   window.history.pushState(null, "", window.location.href);
@@ -32,7 +29,7 @@ export default function StudentDashboard() {
   return () => {
     window.removeEventListener("popstate", handleBack);
   };
-}, []);
+}, [logout, navigate]);
   useEffect(() => {
   const loadExams = async () => {
     try {
@@ -53,16 +50,13 @@ export default function StudentDashboard() {
 
 
   const handleLogout = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch (e) {
-        console.warn("Logout API failed");
-      }
-
-   localStorage.removeItem("exam_active");
-   logout();
-   navigate('/login');
- };
+    await runLogoutFlow({
+      apiClient: api,
+      logout,
+      onError: () => console.warn("Logout API failed")
+    });
+    navigate('/login');
+  };
 
   const formatDate = (dt) => dt ? new Date(dt).toLocaleString() : '-';
   const activeExams = exams.filter(e => new Date(e.scheduledStart) <= new Date());

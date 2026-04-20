@@ -101,21 +101,42 @@ public class AttemptService {
     @Transactional
     public Map<String, String> saveAnswers(Long attemptId, SaveAnswerRequest request, String studentEmail) {
         ExamAttempt attempt = getAttemptForStudent(attemptId, studentEmail);
-        if (attempt.getStatus() != AttemptStatus.IN_PROGRESS) {
+        // Race-condition hardening:
+        // If proctoring has just set AUTO_SUBMITTED, allow one final save flush from
+        // the frontend so the latest selected answer is not lost before evaluation.
+        // Do not allow saves after explicit SUBMITTED/EVALUATED terminal states.
+        if (attempt.getStatus() == AttemptStatus.SUBMITTED
+                || attempt.getStatus() == AttemptStatus.EVALUATED) {
             return Map.of("status", "ALREADY_SUBMITTED", "message", "Exam already submitted");
         }
+
+        Map<String, Integer> incomingAnswers = request.getAnswers() == null
+                ? new HashMap<>()
+                : request.getAnswers();
+
         LocalDateTime now = LocalDateTime.now();
         long elapsed = ChronoUnit.SECONDS.between(attempt.getServerStartTime(), now);
         long examRemaining = ChronoUnit.SECONDS.between(now, attempt.getExam().getScheduledEnd());
         long allowed = Math.min(attempt.getExam().getDurationMinutes() * 60L, examRemaining) + 30L;
         if (elapsed > allowed) {
+            try {
+                // Persist latest client state before forced timeout submit.
+                attempt.setAnswers(objectMapper.writeValueAsString(incomingAnswers));
+                if (request.getMarkedForReview() != null) {
+                    attempt.setMarkedForReview(objectMapper.writeValueAsString(request.getMarkedForReview()));
+                }
+            } catch (Exception ignored) {
+                // Keep timeout auto-submit robust even if serialization fails.
+            }
             attempt.setStatus(AttemptStatus.AUTO_SUBMITTED);
             attempt.setSubmittedAt(LocalDateTime.now());
             attemptRepository.save(attempt);
             return Map.of("status", "AUTO_SUBMITTED", "message", "Time expired. Exam auto-submitted.");
         }
         try {
-            attempt.setAnswers(objectMapper.writeValueAsString(request.getAnswers()));
+            // Request carries the full latest answer map from client.
+            // Replace stored answers so changed and cleared responses are both persisted.
+            attempt.setAnswers(objectMapper.writeValueAsString(incomingAnswers));
             if (request.getMarkedForReview() != null) {
                 attempt.setMarkedForReview(objectMapper.writeValueAsString(request.getMarkedForReview()));
             }

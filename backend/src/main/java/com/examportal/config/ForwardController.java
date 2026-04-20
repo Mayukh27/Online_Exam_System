@@ -8,7 +8,8 @@ public class ForwardController {
 
     @RequestMapping(value = {
             "/auth/**",
-            "/login","/register",
+            "/login",
+            "/register",
             "/student/**",
             "/admin/**",
             "/teacher/**"

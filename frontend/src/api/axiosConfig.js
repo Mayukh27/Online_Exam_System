@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearLocalAuthState } from '../utils/authSession';
 const api = axios.create({ baseURL: window.location.origin,});
 api.interceptors.request.use((config) => {
   try {
@@ -17,14 +18,14 @@ api.interceptors.request.use((config) => {
     }
   } catch (e) {
     console.error("Storage parse error:", e);
-    localStorage.removeItem('examportal_user');
+    clearLocalAuthState();
   }
 
   return config;
 });api.interceptors.response.use((res) => res, (err) => {
   if (err.response?.status === 401) { 
     alert("Session expired or logged in from another device");
-    localStorage.removeItem('examportal_user'); 
+    clearLocalAuthState();
     window.location.href = '/login';
    }
   return Promise.reject(err);

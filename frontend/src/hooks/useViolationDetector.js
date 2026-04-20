@@ -36,6 +36,11 @@ showSnackbar
   const reportingRef = useRef(false);
   const devtoolsCheckRef = useRef(null);
   const mouseLeaveTimerRef = useRef(null);
+  const notify = useCallback((message) => {
+    if (typeof showSnackbar === 'function') {
+      showSnackbar(message);
+    }
+  }, [showSnackbar]);
 
   const report = useCallback(async (violationType, details = '') => {
     if (!enabled || !attemptId || reportingRef.current) return;
@@ -48,7 +53,6 @@ showSnackbar
       if (violationType === 'FULLSCREEN_EXIT') {
         // Backend sends graceSeconds — ExamPage handles the modal countdown
         if (onFullscreenExit) onFullscreenExit(data);
-        if (data.autoSubmitted && onAutoSubmit) onAutoSubmit();
       } else {
         if (data.autoSubmitted && onAutoSubmit) onAutoSubmit();
       }
@@ -86,17 +90,17 @@ showSnackbar
     // ── COPY / CUT / PASTE ─────────────────────────────────────
     const onCopy = (e) => { 
       e.preventDefault(); 
-      showSnackbar("Cut/Copy/Paste is not allowed during the exam");
+      notify("Cut/Copy/Paste is not allowed during the exam");
       //report('COPY_PASTE', 'Copy attempted'); 
     };
     const onCut  = (e) => { 
       e.preventDefault(); 
-      showSnackbar("Cut/Copy/Paste is not allowed during the exam");
+      notify("Cut/Copy/Paste is not allowed during the exam");
       //report('COPY_PASTE', 'Cut attempted');
      };
     const onPaste = (e) => { 
       e.preventDefault(); 
-      showSnackbar("Cut/Copy/Paste is not allowed during the exam");
+      notify("Cut/Copy/Paste is not allowed during the exam");
       //report('COPY_PASTE', 'Paste attempted'); 
     };
 
@@ -106,7 +110,7 @@ showSnackbar
       e.preventDefault(); 
     const now = Date.now();
     if (now - lastAlertTime > 2000) { // 2 sec cooldown
-        showSnackbar("Right-click is not allowed during the exam");
+        notify("Right-click is not allowed during the exam");
         lastAlertTime = now;
     //report('CONTEXT_MENU', 'Right-click blocked'); 
     }
@@ -129,7 +133,7 @@ showSnackbar
       // Copy/paste/view-source
       if (e.ctrlKey && ['c','v','x','u','a','s'].includes(k)) {
         e.preventDefault(); 
-        showSnackbar("Keyboard shortcuts are not allowed during the exam");
+        notify("Keyboard shortcuts are not allowed during the exam");
         //report('KEYBOARD_SHORTCUT', `Ctrl+${e.key} blocked`); 
         return;
       }
@@ -137,7 +141,7 @@ showSnackbar
       if (e.key === 'Escape') 
         {
            e.preventDefault();
-           showSnackbar("Exiting fullscreen mode is not allowed during the exam");
+           notify("Exiting fullscreen mode is not allowed during the exam");
           //report('KEYBOARD_SHORTCUT', 'Escape key blocked');
         }
       // Alt+Tab (only detectable if window is still focused)
@@ -198,5 +202,5 @@ showSnackbar
       if (devtoolsCheckRef.current) clearInterval(devtoolsCheckRef.current);
       if (mouseLeaveTimerRef.current) clearTimeout(mouseLeaveTimerRef.current);
     };
-  }, [enabled, report]);
+  }, [enabled, report, notify]);
 }

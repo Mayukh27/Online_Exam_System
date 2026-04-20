@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getExamsWithResults, getExamStudentResults } from '../api/adminApi';
+import { getExamsWithResults, getExamStudentResults, downloadExamStudentResultsExcel } from '../api/adminApi';
 import { downloadResultPdf } from '../api/attemptApi';
 import Spinner from './Spinner';
 
@@ -17,6 +17,7 @@ export default function ExamResultsViewer() {
   const [loadingExams,   setLoadingExams]   = useState(true);
   const [loadingResults, setLoadingResults] = useState(false);
   const [pdfLoading,     setPdfLoading]     = useState(null); // attemptId being downloaded
+  const [excelLoading,   setExcelLoading]   = useState(false);
   const [error,          setError]          = useState('');
 
   /* Load all exams */
@@ -56,6 +57,30 @@ export default function ExamResultsViewer() {
       alert('PDF download failed.');
     } finally {
       setPdfLoading(null);
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    if (!selectedExam) return;
+    setExcelLoading(true);
+    try {
+      const res = await downloadExamStudentResultsExcel(selectedExam.id);
+      const blob = new Blob(
+        [res.data],
+        { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedExam.title || 'exam'}_detailed_results.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert('Excel download failed.');
+    } finally {
+      setExcelLoading(false);
     }
   };
 
@@ -140,7 +165,8 @@ export default function ExamResultsViewer() {
         /* STUDENT RESULTS TABLE */
         <div>
           {/* Back + exam header */}
-          <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:20 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
             <button onClick={() => { setSelectedExam(null); setResults([]); setExpandedRow(null); }}
               style={{ padding:'7px 14px', border:'1px solid var(--border)', borderRadius:6, background:'#fff',
                 color:'var(--text-secondary)', cursor:'pointer', fontWeight:600, fontSize:13 }}>
@@ -152,6 +178,24 @@ export default function ExamResultsViewer() {
                 {results.length} student{results.length !== 1 ? 's' : ''} attempted
               </div>
             </div>
+            </div>
+            <button
+              onClick={handleDownloadExcel}
+              disabled={loadingResults || excelLoading || results.length === 0}
+              style={{
+                padding:'8px 14px',
+                background:'#166534',
+                color:'#fff',
+                border:'none',
+                borderRadius:6,
+                fontWeight:700,
+                fontSize:12,
+                cursor:(loadingResults || excelLoading || results.length === 0) ? 'not-allowed' : 'pointer',
+                opacity:(loadingResults || excelLoading || results.length === 0) ? 0.6 : 1
+              }}
+            >
+              {excelLoading ? 'Preparing…' : '⬇ Detailed Excel'}
+            </button>
           </div>
 
           {loadingResults ? (

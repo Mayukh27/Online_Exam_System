@@ -10,7 +10,16 @@ import java.util.List;
 
 /**
  * Question - A single question in the central question bank.
- * options are stored as an ordered ElementCollection.
+ *
+ * IMAGE STORAGE (via separate tables):
+ *   - questionImage / combinedOptionImage -> question_images table (QuestionImage entity, @OneToOne)
+ *   - per-option images                  -> question_option_images table (QuestionOptionImage, @OneToMany)
+ *
+ * The inline BYTEA columns (question_image, question_image_type, combined_option_image,
+ * combined_option_image_type) previously on this entity have been removed.
+ * They are now stored exclusively in question_images.
+ * The schema migration backfills existing data and drops the legacy columns.
+ *
  * correctOptionIndex is zero-based; server-side evaluation compares against this.
  * The correct index is NEVER sent to the client during an active exam session.
  */
@@ -37,11 +46,21 @@ public class Question {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String questionText;
 
+    // ── Question & combined-option images (question_images table) ─────────
+    @OneToOne(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private QuestionImage image;
+
+    // ── Option text ───────────────────────────────────────────────────────
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "question_options", joinColumns = @JoinColumn(name = "question_id"))
     @OrderColumn(name = "option_index")
     @Column(name = "option_text", columnDefinition = "TEXT")
     private List<String> options;
+
+    // ── Per-option images (question_option_images table) ──────────────────
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderBy("optionIndex ASC")
+    private List<QuestionOptionImage> optionImages;
 
     /** Zero-based index into options list identifying the correct answer */
     @Column(nullable = false)

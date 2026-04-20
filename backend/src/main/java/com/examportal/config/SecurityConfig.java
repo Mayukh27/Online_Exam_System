@@ -26,7 +26,17 @@ import java.util.List;
 
 /**
  * SecurityConfig - Stateless JWT-based Spring Security setup.
- * Only /auth/** is public. All other routes require a valid Bearer token.
+ *
+ * PUBLIC IMAGE ENDPOINTS (no auth required):
+ *   /questions/{id}/image                  - question body image
+ *   /questions/{id}/combined-option-image  - combined option illustration image
+ *   /questions/{id}/option-image/{i}       - per-option image
+ *
+ * These are opened without JWT so that <img src="..."> tags render correctly in
+ * the student exam view. The question IDs are already disclosed in the exam
+ * session payload the student receives after authenticating.
+ *
+ * All other routes require a valid Bearer token.
  * Role-based access control is enforced via @PreAuthorize on controllers.
  */
 @Configuration
@@ -46,13 +56,21 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(  "/",
+                        .requestMatchers(
+                                "/",
+                        "/login",
+                        "/register",
                                 "/index.html",
                                 "/static/**",
                                 "/auth/**",
                                 "/student/**",
                                 "/teacher/**",
-                                "/admin/**").permitAll()
+                                "/admin/**",
+                                // Image endpoints — public so <img> tags load without auth headers
+                                "/questions/*/image",
+                        "/questions/*/combined-option-image",
+                                "/questions/*/option-image/*"
+                        ).permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -62,12 +80,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        /*configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",
-                "http://10.176.244.1:3000"
-        ));;*/
         configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

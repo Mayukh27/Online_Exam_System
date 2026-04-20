@@ -98,10 +98,24 @@ public class ExamService {
         Map<String, List<Long>> sectionMap = new LinkedHashMap<>();
 
         for (BlueprintEntry entry : exam.getBlueprint().getEntries()) {
-            List<Question> selected = questionService.fetchRandom(entry.getSubjectId(), entry.getQuestionCount());
+            Integer marksPerQuestion = entry.getMarksPerQuestion() != null ? entry.getMarksPerQuestion() : 1;
+            Double negativeMarks = entry.getNegativeMarks() != null ? entry.getNegativeMarks() : 0.25;
+
+            List<Question> selected = questionService.fetchRandom(
+                entry.getSubjectId(),
+                entry.getQuestionCount(),
+                marksPerQuestion,
+                negativeMarks
+            );
             if (selected.size() < entry.getQuestionCount()) {
+            String sectionLabel = entry.getSectionName() != null && !entry.getSectionName().isBlank()
+                ? entry.getSectionName()
+                : "(no section)";
                 throw new IllegalStateException(
                         "Insufficient questions for subject ID " + entry.getSubjectId() +
+                    " in section " + sectionLabel +
+                    " with marks=" + marksPerQuestion +
+                    " and negativeMarks=" + negativeMarks +
                                 ". Required: " + entry.getQuestionCount() +
                                 ", Available: " + selected.size());
             }

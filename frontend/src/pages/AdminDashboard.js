@@ -6,6 +6,7 @@ import { createBlueprint, createExam, publishExam, getAllExams, getBlueprints, d
 import ExamResultsViewer from '../components/ExamResultsViewer';
 import Spinner from '../components/Spinner';
 import api from '../api/axiosConfig';
+import { runLogoutFlow } from '../utils/authSession';
 
 const TABS = ['Overview','Teachers','Subjects','Blueprints','Exams','Results'];
 
@@ -29,16 +30,12 @@ export default function AdminDashboard() {
   const flash = (text, ok=true) => { setMsg({text,ok}); setTimeout(()=>setMsg({text:'',ok:true}),4000); };
   useEffect(() => {
   const handleBack = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch (e) {
-      console.warn("Logout failed");
-    }
-
-    localStorage.removeItem("examportal_user");
-    localStorage.removeItem("exam_active");
-
-    window.location.href = "/login";
+    await runLogoutFlow({
+      apiClient: api,
+      logout,
+      onError: () => console.warn("Logout failed")
+    });
+    navigate('/login', { replace: true });
   };
 
   window.history.pushState(null, "", window.location.href);
@@ -47,7 +44,7 @@ export default function AdminDashboard() {
   return () => {
     window.removeEventListener("popstate", handleBack);
   };
-}, []);
+}, [logout, navigate]);
   useEffect(() => {
     getStats().then(r=>setStats(r.data.data||{})).catch(()=>{});
     getSubjects().then(r=>setSubjects(r.data.data||[])).catch(()=>{});
@@ -113,16 +110,13 @@ export default function AdminDashboard() {
   const tabIcon = { Overview:'📊', Teachers:'👨‍🏫', Subjects:'📚', Blueprints:'🗺', Exams:'📋', Results:'🏆' };
   
   const handleLogout = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch (e) {
-        console.warn("Logout API failed");
-      }
-
-   localStorage.removeItem("exam_active");
-   logout();
-   navigate('/login');
- };
+    await runLogoutFlow({
+      apiClient: api,
+      logout,
+      onError: () => console.warn("Logout API failed")
+    });
+    navigate('/login');
+  };
 
   return (
     <div style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column'}}>

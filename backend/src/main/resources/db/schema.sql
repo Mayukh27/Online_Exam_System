@@ -179,3 +179,70 @@ ADD COLUMN IF NOT EXISTS session_token VARCHAR(255);
 UPDATE blueprint_entries
 SET subject_ids = CAST(subject_id AS VARCHAR)
 WHERE subject_ids IS NULL AND subject_id IS NOT NULL;
+-- ═══════════════════════════════════════════════════════════════════════
+-- MIGRATION: Image support for questions and options
+-- Run once against existing databases. Safe to re-run (IF NOT EXISTS / ADD COLUMN IF NOT EXISTS).
+-- For fresh installs: JPA ddl-auto=update will create these automatically from the entities.
+-- ═══════════════════════════════════════════════════════════════════════
+
+-- 1. Add image columns to the questions table
+ALTER TABLE questions
+    ADD COLUMN IF NOT EXISTS question_image      BYTEA,
+    ADD COLUMN IF NOT EXISTS question_image_type VARCHAR(50),
+    ADD COLUMN IF NOT EXISTS combined_option_image BYTEA,
+    ADD COLUMN IF NOT EXISTS combined_option_image_type VARCHAR(50);
+
+-- 1b. Dedicated question images table (preferred storage)
+CREATE TABLE IF NOT EXISTS question_images (
+    id                         BIGSERIAL PRIMARY KEY,
+    question_id                BIGINT UNIQUE NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+    question_image             BYTEA,
+    question_image_type        VARCHAR(50),
+    combined_option_image      BYTEA,
+    combined_option_image_type VARCHAR(50)
+);
+
+CREATE INDEX IF NOT EXISTS idx_question_images_question ON question_images(question_id);
+
+-- Backfill legacy image columns from questions table into question_images
+INSERT INTO question_images (
+    question_id,
+    question_image,
+    question_image_type,
+    combined_option_image,
+    combined_option_image_type
+)
+SELECT
+    q.id,
+    q.question_image,
+    q.question_image_type,
+    q.combined_option_image,
+    q.combined_option_image_type
+FROM questions q
+WHERE (q.question_image IS NOT NULL OR q.combined_option_image IS NOT NULL)
+  AND NOT EXISTS (
+      SELECT 1
+      FROM question_images qi
+      WHERE qi.question_id = q.id
+  );
+
+-- combined_option image columns are redundant in questions now that question_images
+-- is the single source of truth.
+ALTER TABLE questions
+    DROP COLUMN IF EXISTS combined_option_image,
+    DROP COLUMN IF EXISTS combined_option_image_type;
+
+-- 2. Create the option-images table
+--    Each row stores the image for one option slot of one question.
+--    (question_id, option_index) is unique — one image per slot.
+CREATE TABLE IF NOT EXISTS question_option_images (
+    id           BIGSERIAL PRIMARY KEY,
+    question_id  BIGINT      NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+    option_index INT         NOT NULL,
+    image_data   BYTEA       NOT NULL,
+    image_type   VARCHAR(50) NOT NULL,
+    UNIQUE (question_id, option_index)
+);
+
+-- Index for fast lookup by question
+CREATE INDEX IF NOT EXISTS idx_option_images_question ON question_option_images(question_id);

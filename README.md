@@ -85,7 +85,7 @@ Designed for institutions to conduct exams over a local network (LAN) without re
 | Excel parsing | Apache POI 5.2.5 |
 | PDF generation | iText 7 |
 | Auth | Stateless JWT, BCrypt password hashing |
-| Deployment | Single JAR + `application.yml` |
+| Deployment | Single JAR with external config files |
 
 ---
 
@@ -168,12 +168,12 @@ Create the database and run the migration script:
 ```sql
 CREATE DATABASE "ExamSystemDB";
 \c "ExamSystemDB"
-\i backend_final/src/main/resources/db/schema.sql
+\i backend/src/main/resources/db/schema.sql
 ```
 
 ### 2. Configure Environment Variables
 
-Create .env file in the project root folder :
+Create `backend/.env` from the example file and fill in your local values:
 
 ```
 DB_URL=jdbc:postgresql://localhost:5432/ExamSystemDB
@@ -187,22 +187,32 @@ MAIL_PASSWORD=your_app_password
 ### 3. Build and run the backend
 
 ```bash
-cd backend_final
+cd backend
 mvn clean install
 mvn spring-boot:run
 ```
 
-The backend starts on `http://0.0.0.0:8080/api`.
+The backend listens on `http://0.0.0.0:8080` and serves the frontend from Spring Boot static resources.
+
+For jar-based deployment, build the backend JAR and run it from a folder that contains the external config files:
+
+```bash
+cd backend
+mvn clean package
+java -jar target/exam-portal-server-1.0.0.jar
+```
+
+Keep `backend/.env` in the same directory you launch the JAR from, and place an external `application.yml` there as well if you want to override the packaged defaults.
 
 ### 4. Build the frontend
 
 ```bash
-cd frontend_final
+cd frontend
 npm install
 npm run build
 ```
 
-Copy the `build/` output into `backend_final/src/main/resources/static/` so Spring Boot serves it, then rebuild the JAR.
+Copy the `build/` output into `backend/src/main/resources/static/` so Spring Boot serves the latest UI, then rebuild the JAR.
 
 ### 5. LAN access
 
@@ -213,6 +223,30 @@ http://192.168.1.10:8080
 ```
 
 No additional configuration is needed on client machines.
+
+The frontend talks to the same origin, so API requests resolve against routes like `/auth/login`, `/exams/active`, and `/attempts/start/{examId}`.
+
+### 6. Recommended LAN deployment (one server PC + student clients)
+
+Use one machine as the server and operator console:
+- Server PC role: Admin/Teacher uses this machine.
+- Runs: PostgreSQL + Spring Boot JAR.
+- Network: Static LAN IP recommended (example: `192.168.1.10`).
+
+All other machines are student clients:
+- Student PCs open the app in a browser using `http://<SERVER_LAN_IP>:8080`.
+- No backend/frontend runtime is needed on student PCs.
+
+Checklist for stable exam sessions:
+- Allow inbound TCP `8080` on the server firewall for the local network.
+- Keep all PCs on the same subnet and avoid guest/isolated Wi-Fi.
+- Prefer wired LAN for the server PC during exams.
+- Do a pre-exam dry run with 3-5 student PCs.
+
+Operational flow:
+- Admin/Teacher logs in from the server PC, creates/publishes exam.
+- Students log in from their own PCs using the server LAN URL.
+- All exam attempts, autosave, proctor events, and results are stored centrally on the server.
 
 ---
 
@@ -232,8 +266,16 @@ Teachers can upload questions in bulk using an `.xlsx` file.
 | H | `difficulty` | optional (`EASY`/`MEDIUM`/`HARD`) |
 | I | `marks` | optional (default `1`) |
 | J | `negative_marks` | optional (default `0.25`) |
+| K | `question_image` | optional image path or embedded image reference for the question body |
+| L | `combined_option_image` | optional image path or embedded image reference shown below the options |
+| M | `option1_image` | optional image path or embedded image reference for option A |
+| N | `option2_image` | optional image path or embedded image reference for option B |
+| O | `option3_image` | optional image path or embedded image reference for option C |
+| P | `option4_image` | optional image path or embedded image reference for option D |
 
 Row 1 is the header and is skipped. Rows with an empty column A are also skipped.
+
+If you use image paths in these columns, send the Excel file together with an optional `imageZip` archive that contains the referenced files. The importer also supports embedded Excel images for these columns.
 
 ---
 
